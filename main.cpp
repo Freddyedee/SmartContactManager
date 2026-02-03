@@ -31,7 +31,7 @@ int main(int argc, char *argv[])
         &app,
         []() { QCoreApplication::exit(-1); },
         Qt::QueuedConnection);
-        /*Qt::QueuedConnection
+    /*Qt::QueuedConnection
 
     Garantiza que la salida ocurra después de que Qt termine de procesar la señal.
     */
@@ -39,3 +39,5 @@ int main(int argc, char *argv[])
 
     return app.exec();
 }
+
+//COMENTARIO PRUEBA MONKI WR
