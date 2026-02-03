@@ -40,6 +40,6 @@ int main(int argc, char *argv[])
 //sssss
     return app.exec();
 }
-int suma(int a, int b){
-    return a + b;
+int suma(int a, int b, int c){
+    return a + b + c;
 }
