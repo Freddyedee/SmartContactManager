@@ -1,5 +1,6 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
+#include <iostream>
 
 int main(int argc, char *argv[])
 {
@@ -38,4 +39,7 @@ int main(int argc, char *argv[])
     engine.loadFromModule("AgendaContactosInteligente", "Main");
 //sssss
     return app.exec();
+}
+int suma(int a, int b){
+    return a + b;
 }
