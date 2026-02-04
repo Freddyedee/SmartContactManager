@@ -6,10 +6,16 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(Qt6 REQUIRED COMPONENTS Quick)
 
-qt_standard_project_setup(REQUIRES 6.8)
+qt_standard_project_setup(REQUIRES 6.10)
 
 qt_add_executable(appAgendaContactosInteligente
     main.cpp
+    Presentacion/src/presentationqml.cpp
+    Presentacion/include/presentationqml.h
+    Negocio/include/
+    Negocio/src/
+    Datos/include/
+    Datos/src/
 )
 
 qt_add_qml_module(appAgendaContactosInteligente
@@ -17,7 +23,14 @@ qt_add_qml_module(appAgendaContactosInteligente
     VERSION 1.0
     QML_FILES
         Main.qml
+        SOURCES Datos/include/test.h
+        SOURCES Datos/src/test.cpp
+        SOURCES Negocio/src/test.cpp
+        SOURCES Negocio/include/test.h
+
 )
+
+
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
 # If you are developing for iOS or macOS you should consider setting an
@@ -40,3 +53,5 @@ install(TARGETS appAgendaContactosInteligente
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
+
+

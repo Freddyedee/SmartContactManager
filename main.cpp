@@ -36,14 +36,12 @@ int main(int argc, char *argv[])
 
     Garantiza que la salida ocurra después de que Qt termine de procesar la señal.
     */
+
+    qDebug() << "Cargando QML...";
+
+
     engine.loadFromModule("AgendaContactosInteligente", "Main");
     return app.exec();
 }
 
-//COMENTARIO PRUEBA MONKI WR
-int suma(int a, int b, int c){
-    return a + b + c;
-}
-int resta(int a, int b){
-    return a - b;
-}
+

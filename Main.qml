@@ -1,8 +1,15 @@
-import QtQuick
+import QtQuick 6.0
+import QtQuick.Controls 6.0
 
-Window {
+ApplicationWindow {
+    visible: true
     width: 640
     height: 480
-    visible: true
-    title: qsTr("Hello World")
+    title: qsTr("Agenda de Contactos")
+
+    // Agrega un botón de ejemplo
+    Button {
+        text: "Click me"
+        anchors.centerIn: parent
+    }
 }
