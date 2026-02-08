@@ -3,9 +3,9 @@
 #include <sstream>
 #include <string>
 
-std::vector<Contact> ContactRepository::cargar(const std::string& nombreArchivo){
+std::vector<Contacto> ContactRepository::load(const std::string& nombreArchivo){
 
-    std::vector<Contact> contactos; //Creamos una variable de tipo contact que a su vez es un vector
+    std::vector<Contacto> contactos; //Creamos una variable de tipo contact que a su vez es un vector
     std::ifstream archivo (nombreArchivo);
     std::string linea;
 
@@ -15,7 +15,7 @@ std::vector<Contact> ContactRepository::cargar(const std::string& nombreArchivo)
 
     while(std::getline(archivo, linea)){
         std::stringstream ss(linea);
-        Contact c;
+        Contacto c;
         std::getline(ss, c.nombre, ';');
         std::getline(ss, c.telefono, ';');
         std::getline(ss, c.email, ';');
@@ -25,7 +25,7 @@ std::vector<Contact> ContactRepository::cargar(const std::string& nombreArchivo)
     return contactos;
 }
 
-void ContactRepository::guardar(const std::vector<Contact>& contactos, const std::string& nombreArchivo){
+void ContactRepository::save(const std::vector<Contacto>& contactos, const std::string& nombreArchivo){
     std::ofstream archivo(nombreArchivo);
     for(const auto& c : contactos){
         archivo << c.nombre << ";" << c.telefono << ";" << c.email << "\n";
@@ -33,7 +33,7 @@ void ContactRepository::guardar(const std::vector<Contact>& contactos, const std
     archivo.close();
 }
 
-void ContactRepository::exportarCSV(const std::vector<Contact>& contactos, const std::string& nombreArchivo){
+void ContactRepository::exportCSV(const std::vector<Contacto>& contactos, const std::string& nombreArchivo){
 
     std::ofstream archivo(nombreArchivo);
     archivo << "Nombre;Telefono;Email\n"; //Cabecera
