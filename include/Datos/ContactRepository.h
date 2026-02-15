@@ -6,9 +6,9 @@
 
 class ContactRepository {
     public:
-    static std::vector<Contact> cargar(const std::string& nombreArchivo = "contactos.txt");
-    static void guardar(const std::vector<Contact>& contactos, const std::string& nombreArchivo = "contactos.txt");
-    static void exportarCSV(const std::vector<Contact>& contactos, const std::string& nombreArchivo = "contactos.csv");
+    static std::vector<Contacto> load(const std::string& nombreArchivo = "contactos.txt");
+    static void save(const std::vector<Contacto>& contactos, const std::string& nombreArchivo = "contactos.txt");
+    static void exportCSV(const std::vector<Contacto>& contactos, const std::string& nombreArchivo = "contactos.csv");
 
 };
 
