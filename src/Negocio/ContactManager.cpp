@@ -1,118 +1,259 @@
 #include "ContactManager.h"
-#include <algorithm>
+#include <QCoreApplication>
+#include <iostream>
+#include <QDir>
 
-ContactManager::ContactManager() {
-    contacts = repo.load(filePath);
+
+ContactManager::ContactManager() : nextId(1) {
+
+    // Guardar y cargar SIEMPRE desde el directorio del ejecutable
+    filePath =
+        QCoreApplication::applicationDirPath().toStdString()
+        + "/contactos.txt";
+
+    loadData();
+}
+
+ContactManager::~ContactManager() {
+    saveToFile(); // Guardado automático al cerrar
+}
+void ContactManager::loadData() {
+    contactos = repositorioContactos.load();
+
+    nextId = 1;
+    for (const auto& c : contactos) {
+        if (c.getId() >= nextId) {
+            nextId = c.getId() + 1;
+        }
+    }
+
     rebuildIndices();
 }
 
 void ContactManager::rebuildIndices() {
     telIndex.clear();
     emailIndex.clear();
-    for (size_t i = 0; i < contacts.size(); ++i) {
-        telIndex.add(contacts[i].telefono, i);
-        emailIndex.add(contacts[i].email, i);
-        nameTrie.insert(contacts[i].nombre, i);
+    // Trie no tiene clear fácil, idealmente se reinicializa,
+    // pero aquí asumiremos que al iniciar el programa está vacío.
+    // Si llamas a esto en runtime, deberías limpiar el Trie primero.
+
+    for (const auto& c : contactos) {
+        telIndex.add(c.getTelefono(), c.getId());
+        emailIndex.add(c.getEmail(), c.getId());
+        nameTrie.insert(c.getNombre(), c.getId());
     }
 }
 
-bool ContactManager::create(const Contacto& c) {
-    if (telIndex.find(c.telefono) != static_cast<size_t>(-1) ||
-        emailIndex.find(c.email) != static_cast<size_t>(-1))
+int ContactManager::generateId() {
+    return nextId++;
+}
+
+int ContactManager::findVectorIndexById(int id) const {
+    for (size_t i = 0; i < contactos.size(); ++i) {
+        if (contactos[i].getId() == id) return static_cast<int>(i);
+    }
+    return -1;
+}
+
+bool ContactManager::create(std::string nombre,
+                            std::string telefono,
+                            std::string email)
+{
+    // 1. Validación básica
+    if (nombre.empty() || telefono.empty()) {
+        std::cout << "[ADD][ERROR] Nombre o teléfono vacío\n";
         return false;
+    }
 
-    size_t idx = contacts.size();
-    contacts.push_back(c);
-    telIndex.add(c.telefono, idx);
-    emailIndex.add(c.email, idx);
-    nameTrie.insert(c.nombre, idx);
-    recents.add(idx);
+    // 2. Validación de formato
+    if (!std::all_of(telefono.begin(), telefono.end(), ::isdigit)) {
+        std::cout << "[ADD][ERROR] Teléfono debe ser numérico\n";
+        return false;
+    }
+
+    if (!email.empty() && email.find('@') == std::string::npos) {
+        std::cout << "[ADD][ERROR] Email inválido\n";
+        return false;
+    }
+
+    // 3. Validación de duplicados (índices hash)
+    if (telIndex.find(telefono) != -1) {
+        std::cout << "[ADD][ERROR] Teléfono duplicado\n";
+        return false;
+    }
+
+    if (!email.empty() && emailIndex.find(email) != -1) {
+        std::cout << "[ADD][ERROR] Email duplicado\n";
+        return false;
+    }
+
+    // 4. Crear contacto
+    int id = generateId();
+    Contacto c(id, nombre, telefono, email);
+    contactos.push_back(c);
+
+    // 5. Indexar (USANDO ID)
+    telIndex.add(telefono, id);
+
+    if (!email.empty()) {
+        emailIndex.add(email, id);
+    }
+
+    nameTrie.insert(nombre, id);
+    recents.add(id);
+
+    // 6. Persistencia
+    saveToFile();
+
+    // 7. Log
+    std::cout << "[ADD] ID=" << id
+              << " | Nombre=" << nombre
+              << " | Tel=" << telefono
+              << " | Email=" << email << std::endl;
+
+    return true;
+}
+bool ContactManager::update(int id,
+                            const std::string& nuevoNombre,
+                            const std::string& nuevoTel,
+                            const std::string& nuevoEmail)
+{
+    int idx = findVectorIndexById(id);
+    if (idx == -1) return false;
+
+    Contacto& c = contactos[idx];
+
+    // 1. Cambio de teléfono
+    if (c.getTelefono() != nuevoTel) {
+        int existingId = telIndex.find(nuevoTel);
+        if (existingId != -1 && existingId != id) return false;
+
+        telIndex.remove(c.getTelefono());
+        telIndex.add(nuevoTel, id);
+    }
+
+    // 2. Cambio de email
+    if (c.getEmail() != nuevoEmail) {
+        int existingId = emailIndex.find(nuevoEmail);
+        if (existingId != -1 && existingId != id) return false;
+
+        emailIndex.remove(c.getEmail());
+        emailIndex.add(nuevoEmail, id);
+    }
+
+    // 3. Cambio de nombre (Trie)
+    if (c.getNombre() != nuevoNombre) {
+        nameTrie.removeWord(c.getNombre(), id);
+        nameTrie.insert(nuevoNombre, id);
+    }
+
+    // 4. Actualizar objeto
+    c.actualizarContacto(nuevoNombre, nuevoTel, nuevoEmail);
+
+    recents.add(id);
+    saveToFile();
+
     return true;
 }
 
-bool ContactManager::update(size_t index, const Contacto& updated) {
-    if (index >= contacts.size()) return false;
+bool ContactManager::remove(int id) {
+    int idx = findVectorIndexById(id);
+    if (idx == -1) return false;
 
-    // Si cambia teléfono o email, actualizar índices
-    if (contacts[index].telefono != updated.telefono) {
-        telIndex.remove(contacts[index].telefono);
-        telIndex.add(updated.telefono, index);
-    }
-    if (contacts[index].email != updated.email) {
-        emailIndex.remove(contacts[index].email);
-        emailIndex.add(updated.email, index);
-    }
-    // Si cambia nombre, reconstruir Trie (simple pero efectivo)
-    if (contacts[index].nombre != updated.nombre) {
-        rebuildIndices();
-    }
+    Contacto copy = contactos[idx]; // Copia para sacar datos para borrar de índices
 
-    contacts[index] = updated;
-    contacts[index].actualizarUltimoAcceso();
-    recents.add(index);
+    // Eliminar de estructuras auxiliares
+    telIndex.remove(copy.getTelefono());
+    emailIndex.remove(copy.getEmail());
+    nameTrie.removeWord(copy.getNombre(), id);
+
+    // Eliminar del vector principal
+    contactos.erase(contactos.begin() + idx);
+
+    saveToFile();
     return true;
 }
 
-bool ContactManager::remove(size_t index) {
-    if (index >= contacts.size()) return false;
-    telIndex.remove(contacts[index].telefono);
-    emailIndex.remove(contacts[index].email);
-    // Trie se reconstruye completo (más simple que borrar nodos)
-    contacts.erase(contacts.begin() + index);
-    rebuildIndices();
-    return true;
+// Búsquedas
+Contacto* ContactManager::searchById(int id) {
+    int idx = findVectorIndexById(id);
+    if (idx == -1) return nullptr;
+
+    recents.add(id);
+    return &contactos[idx];
 }
 
 Contacto* ContactManager::searchByTel(const std::string& tel) {
-    size_t idx = telIndex.find(tel);
-    if (idx == static_cast<size_t>(-1)) return nullptr;
-    contacts[idx].actualizarUltimoAcceso();
-    recents.add(idx);
-    return &contacts[idx];
+    int id = telIndex.find(tel);
+    if (id == -1) return nullptr;
+    return searchById(id); // Reutiliza lógica de recientes
 }
 
 Contacto* ContactManager::searchByEmail(const std::string& email) {
-    size_t idx = emailIndex.find(email);
-    if (idx == static_cast<size_t>(-1)) return nullptr;
-    contacts[idx].actualizarUltimoAcceso();
-    recents.add(idx);
-    return &contacts[idx];
+    int id = emailIndex.find(email);
+    if (id == -1) return nullptr;
+    return searchById(id);
 }
 
 std::vector<Contacto> ContactManager::searchByName(const std::string& prefix) {
-    auto indices = nameTrie.searchPrefix(prefix);
-    std::vector<Contacto> result;
-    for (auto i : indices) {
-        contacts[i].actualizarUltimoAcceso();
-        recents.add(i);
-        result.push_back(contacts[i]);
+    std::vector<int> ids = nameTrie.searchPrefix(prefix);
+    std::vector<Contacto> results;
+
+    for (int id : ids) {
+        int idx = findVectorIndexById(id);
+        if (idx != -1) {
+            results.push_back(contactos[idx]);
+            recents.add(id); // Añadimos a recientes
+        }
     }
-    return result;
+    return results;
 }
 
 std::vector<Contacto> ContactManager::getRecentContacts() {
-    std::vector<size_t> ids = recents.getAll();
-    std::vector<Contacto> result;
-    for (auto i : ids) result.push_back(contacts[i]);
-    return result;
+    std::vector<int> ids = recents.getAll();
+    std::vector<Contacto> results;
+
+    for (int id : ids) {
+        int idx = findVectorIndexById(id);
+        if (idx != -1) {
+            results.push_back(contactos[idx]);
+        }
+    }
+    return results;
 }
 
 void ContactManager::saveToFile() {
-    repo.save(contacts, filePath);
+    repositorioContactos.save(contactos);
 }
 
-void ContactManager::exportToCSV(const std::string& csvPath) {
-    repo.exportCSV(contacts, csvPath);
+void ContactManager::exportToCSV(const std::string& csvPath)
+{
+    QString qPath = QString::fromStdString(csvPath);
+    QString finalPath;
+
+    if (QDir::isAbsolutePath(qPath)) {
+        finalPath = qPath;
+    } else {
+        finalPath =
+            QCoreApplication::applicationDirPath()
+            + "/" + qPath;
+    }
+
+    repositorioContactos.exportCSV(contactos, finalPath.toStdString());
+
+    std::cout << "[EXPORT] CSV generado en: "
+              << finalPath.toStdString() << std::endl;
 }
 
-size_t ContactManager::getIndexByPointer(const Contacto* contact) const {
-    if (!contact) return static_cast<size_t>(-1);
-    auto it = std::find_if(contacts.begin(), contacts.end(),
-                           [contact](const Contacto& c) { return &c == contact; });
-    return (it != contacts.end()) ? std::distance(contacts.begin(), it) : static_cast<size_t>(-1);
+const std::vector<Contacto>& ContactManager::getAllContacts() const {
+    return contactos;
 }
 
-size_t ContactManager::getIndexByTel(const std::string& tel) const {
-    size_t idx = telIndex.find(tel);
-    return idx;
+bool isNumeric(const std::string& value) {
+    return !value.empty() &&
+           std::all_of(value.begin(), value.end(), ::isdigit);
+}
+
+bool isValidEmail(const std::string& email) {
+    return email.empty() || email.find('@') != std::string::npos;
 }

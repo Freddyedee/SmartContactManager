@@ -6,11 +6,12 @@
 
 class ContactIndex {
 private:
-    std::unordered_map<std::string, size_t> data;
+    //Trabaja con mapear clave (telefono, email) -> ID contacto.
+    std::unordered_map<std::string, int> data;
 public:
-    void add(const std::string& key, size_t index);
+    void add(const std::string& key, int index);
     void remove(const std::string& key);
-    size_t find(const std::string& key) const;
+    int find(const std::string& key) const;
     void clear();
 };
 #endif // CONTACTINDEX_H

@@ -1,16 +1,18 @@
 #include "ContactIndex.h"
 
-void ContactIndex::add(const std::string& key, size_t index) {
-    data[key] = index;
+void ContactIndex::add(const std::string& key, int id) {
+    // Si ya existe, se sobrescribe (asumimos validación previa en Manager)
+    data[key] = id;
 }
 
 void ContactIndex::remove(const std::string& key) {
     data.erase(key);
 }
 
-size_t ContactIndex::find(const std::string& key) const {
+int ContactIndex::find(const std::string& key) const {
     auto it = data.find(key);
-    return it != data.end() ? it->second : static_cast<size_t>(-1);
+    // Retornamos -1 si no se encuentra (estándar para "no encontrado" con enteros)
+    return it != data.end() ? it->second : -1;
 }
 
 void ContactIndex::clear() {

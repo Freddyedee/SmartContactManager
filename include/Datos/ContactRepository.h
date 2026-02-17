@@ -1,17 +1,21 @@
 #ifndef CONTACTREPOSITORY_H
 #define CONTACTREPOSITORY_H
-#include "include/Negocio/Contact.h"
+
+#include "Modelo/Contacto.h"
 #include <vector>
 #include <string>
 
 class ContactRepository {
-    public:
-    static std::vector<Contacto> load(const std::string& nombreArchivo = "contactos.txt");
-    static void save(const std::vector<Contacto>& contactos, const std::string& nombreArchivo = "contactos.txt");
-    static void exportCSV(const std::vector<Contacto>& contactos, const std::string& nombreArchivo = "contactos.csv");
+private:
+    std::string archivo;
 
+public:
+    explicit ContactRepository(const std::string& archivo = "contactos.txt");
+
+    std::vector<Contacto> load();
+    void save(const std::vector<Contacto>& contactos);
+    void exportCSV(const std::vector<Contacto>& contactos,
+                   const std::string& archivoCSV = "contactos.csv");
 };
 
-
-
-#endif // CONTACTREPOSITORY_H
+#endif

@@ -10,18 +10,26 @@ private:
     struct Node {
         std::map<char, Node*> children;
         bool isEnd = false;
-        std::vector<size_t> indices;
+        std::vector<int> contactIds; // Lista de IDs que coinciden con este prefijo
     };
     Node* root;
 
     void deleteTrie(Node* node);
-    void collectWords(Node* node, std::vector<size_t>& results);
+    // Helper para recolectar todos los IDs bajo un nodo
 
 public:
     Trie();
     ~Trie();
-    void insert(const std::string& word, size_t index);
-    std::vector<size_t> searchPrefix(const std::string& prefix);
+
+    // Inserta una palabra asociada a un ID
+    void insert(const std::string& word, int id);
+
+    // Elimina una asociación palabra-ID (necesario para updates/deletes)
+    void removeWord(const std::string& word, int id);
+
+    void collectIds(Node* node, std::vector<int>& results);
+
+    std::vector<int> searchPrefix(const std::string& prefix);
 };
 
 #endif // TRIE_H

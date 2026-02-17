@@ -1,12 +1,24 @@
 #include "RecentContacts.h"
 
-void RecentContacts::add(size_t index) {
-    auto it = std::find(recents.begin(), recents.end(), index);
-    if (it != recents.end()) recents.erase(it);
-    recents.push_front(index);
-    if (recents.size() > MAX) recents.pop_back();
+void RecentContacts::add(int id) {
+    // Buscar si el ID ya está en la lista para no duplicarlo
+    auto it = std::find(recents.begin(), recents.end(), id);
+
+    // Si existe, lo borramos de su posición actual
+    if (it != recents.end()) {
+        recents.erase(it);
+    }
+
+    // Lo insertamos al frente (el más reciente)
+    recents.push_front(id);
+
+    // Mantenemos el tamaño máximo
+    if (recents.size() > MAX) {
+        recents.pop_back();
+    }
 }
 
-std::vector<size_t> RecentContacts::getAll() const {
-    return std::vector<size_t>(recents.begin(), recents.end());
+std::vector<int> RecentContacts::getAll() const {
+    // Convertimos la deque a vector para retornarlo
+    return std::vector<int>(recents.begin(), recents.end());
 }

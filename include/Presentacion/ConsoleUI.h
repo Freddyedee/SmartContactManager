@@ -1,4 +1,4 @@
-#ifndef CONSOLEUI_H
+/*#ifndef CONSOLEUI_H
 #define CONSOLEUI_H
 #include "ContactManager.h"
 #include <string>
@@ -26,3 +26,4 @@ public:
     void run();
 };
 #endif // CONSOLEUI_H
+*/

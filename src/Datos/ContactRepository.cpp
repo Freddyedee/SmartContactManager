@@ -1,45 +1,69 @@
-#include "include/Datos/ContactRepository.h"
+#include "Datos/ContactRepository.h"
 #include <fstream>
 #include <sstream>
-#include <string>
+#include <iostream>
 
-std::vector<Contacto> ContactRepository::load(const std::string& nombreArchivo){
+ContactRepository::ContactRepository(const std::string& archivo)
+    : archivo(archivo) {}
 
-    std::vector<Contacto> contactos; //Creamos una variable de tipo contact que a su vez es un vector
-    std::ifstream archivo (nombreArchivo);
+std::vector<Contacto> ContactRepository::load() {
+    std::vector<Contacto> contactos;
+    std::ifstream file(archivo);
+
+    if (!file.is_open()) return contactos;
+
     std::string linea;
+    while (std::getline(file, linea)) {
 
-    if(!archivo.is_open()){
-            return contactos;
-    };
+        if (linea.empty()) continue; // ⬅️ IMPORTANTE
 
-    while(std::getline(archivo, linea)){
         std::stringstream ss(linea);
-        Contacto c;
-        std::getline(ss, c.nombre, ';');
-        std::getline(ss, c.telefono, ';');
-        std::getline(ss, c.email, ';');
-        contactos.push_back(c);
+        std::string idStr, nombre, tel, email;
+
+        if (!std::getline(ss, idStr, ';')) continue;
+        if (!std::getline(ss, nombre, ';')) continue;
+        if (!std::getline(ss, tel, ';')) continue;
+        if (!std::getline(ss, email, ';')) continue;
+
+        // Evitar cabeceras o basura
+        //if (!std::all_of(idStr.begin(), idStr.end(), ::isdigit))
+        //  continue;
+
+        int id = std::stoi(idStr);
+        contactos.emplace_back(id, nombre, tel, email);
     }
-    archivo.close();
+
     return contactos;
 }
 
-void ContactRepository::save(const std::vector<Contacto>& contactos, const std::string& nombreArchivo){
-    std::ofstream archivo(nombreArchivo);
-    for(const auto& c : contactos){
-        archivo << c.nombre << ";" << c.telefono << ";" << c.email << "\n";
+void ContactRepository::save(const std::vector<Contacto>& contactos) {
+    std::ofstream file(archivo);
+    for (const auto& c : contactos) {
+        file << c.getId() << ";"
+             << c.getNombre() << ";"
+             << c.getTelefono() << ";"
+             << c.getEmail() << "\n";
     }
-    archivo.close();
 }
 
-void ContactRepository::exportCSV(const std::vector<Contacto>& contactos, const std::string& nombreArchivo){
+void ContactRepository::exportCSV(
+    const std::vector<Contacto>& contactos,
+    const std::string& archivoCSV)
+{
+    std::ofstream file(archivoCSV);
 
-    std::ofstream archivo(nombreArchivo);
-    archivo << "Nombre;Telefono;Email\n"; //Cabecera
-    for(const auto& c : contactos){
-        archivo << c.nombre << ";" << c.telefono << ";" << c.email << "\n";
+    if (!file.is_open()) {
+        std::cerr << "[EXPORT][ERROR] No se pudo crear el archivo: "
+                  << archivoCSV << std::endl;
+        return;
     }
-    archivo.close();
-}
 
+    file << "ID;Nombre;Telefono;Email\n";
+
+    for (const auto& c : contactos) {
+        file << c.getId() << ";"
+             << c.getNombre() << ";"
+             << c.getTelefono() << ";"
+             << c.getEmail() << "\n";
+    }
+}

@@ -6,10 +6,10 @@
 
 class RecentContacts {
 private:
-    std::deque<size_t> recents;
+    std::deque<int> recents; //Guardar ids.
     static const size_t MAX = 20;
 public:
-    void add(size_t index);
-    std::vector<size_t> getAll() const;
+    void add(int index);
+    std::vector<int> getAll() const;
 };
 #endif // RECENTCONTACTS_H
